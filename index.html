@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div id="login">
+        <h2>Simple Chat</h2>
+        <input id="name" type="text" placeholder="Enter your name" />
+        <button id="join">Join Chat</button>
+    </div> 
+    <div id="chat">
+        <div id="participants" style="font-size:20px;"></div>
+        <div id="messages"></div>
+    </div>
+    
+    <div id="footer">
+      <div id="username"></div> 
+      <input id="message" type="text" placeholder="Enter message..." />
+      <button id="send">Send</button>
+    </div>
+
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let userName = '';
+        const userColor = getRandomColor();
+
+        document.getElementById('join').addEventListener('click', function() {
+            userName = document.getElementById('name').value;
+            if (userName) {
+                socket.emit('join', { name: userName, color: userColor });
+            } else {
+                alert("Будь ласка, введіть своє ім'я");
+            }
+        });
+
+        document.getElementById('send').addEventListener('click', function() {
+            const message = document.getElementById('message').value;
+            if (message) {
+                socket.emit('chat message', { name: userName, message: message, color: userColor });
+                document.getElementById('message').value = '';
+            }
+        });
+
+        socket.on('chat message', function(data) {
+            const messages = document.getElementById('messages');
+            messages.innerHTML += `<p><strong style="color:${data.color}">${data.name}</strong>: ${data.message}</p>`;
+        });
+
+        socket.on('users', function(users) {
+            const participants = document.getElementById('participants');
+            participants.innerHTML = "Users online: " + users.map(user => `<span style="color:${user.color}">${user.name}</span>`).join(', ');
+        });
+
+        socket.on('join', function(data) {
+            if (data.name === userName) {
+                document.getElementById('login').style.display = 'none';
+                document.getElementById('chat').style.display = 'block';
+                document.getElementById('footer').style.display = 'block';
+                document.getElementById('username').innerText = userName;
+            }
+        });
+
+        socket.on('duplicate user', function(message) {
+            document.getElementById('name').value = '';
+            alert(message);
+        });
+
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+    </script>
+</body>
+</html>
